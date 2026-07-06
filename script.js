@@ -165,10 +165,17 @@ function avviaParsingProgressivo(text, mediaMap) {
                             mediaTrovato = true;
                         }
                     }
-
                     if (!mediaTrovato) {
-                        textContentDiv.innerText = messaggio;
+                        // MODIFICA: Usiamo innerHTML e passiamo il testo alla nostra nuova funzione link
+                        textContentDiv.innerHTML = convertiTestoInLink(escapeHtml(messaggio));
+                    } else if (ultimoMsgContenitore && line.trim() !== '') {
+                        let rigaPulita = line.replace('<Questo messaggio è stato modificato>', '');
+                        if (rigaPulita.trim() !== '') {
+                            // Sostituisci la vecchia riga con questa per convertire i link anche nei testi a capo
+                            ultimoMsgContenitore.innerHTML += '<br>' + convertiLinkEAnteprime(escapeHtml(rigaPulita));
+                        }
                     }
+                    
                 } catch (mediaError) {
                     console.error("Errore riga media:", mediaError);
                     textContentDiv.innerText = messaggio;
@@ -177,7 +184,8 @@ function avviaParsingProgressivo(text, mediaMap) {
             } else if (ultimoMsgContenitore && line.trim() !== '') {
                 let rigaPulita = line.replace('<Questo messaggio è stato modificato>', '');
                 if (rigaPulita.trim() !== '') {
-                    ultimoMsgContenitore.innerHTML += '<br>' + escapeHtml(rigaPulita);
+                    // MODIFICA: Applica la conversione dei link anche ai testi a capo
+                    ultimoMsgContenitore.innerHTML += '<br>' + convertiTestoInLink(escapeHtml(rigaPulita));
                 }
             }
         }
@@ -218,6 +226,7 @@ function avviaParsingProgressivo(text, mediaMap) {
     }
 
     elaboraProssimoBlocco();
+
 }
 
 function apriPienoSchermo(indice) {
@@ -296,3 +305,78 @@ function initControls() {
 function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+// Nuova funzione per intercettare i link e creare l'anteprima
+function convertiTestoInLink(testo) {
+    if (!testo) return '';
+
+    // Regex per trovare tutti gli URL che iniziano con http o https
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+    // Convertiamo i link di testo in tag <a> cliccabili
+    let testoModificato = testo.replace(urlRegex, function (url) {
+        return `<a href="${url}" target="_blank" class="chat-link">${url}</a>`;
+    });
+
+    // --- GENERATORE DI ANTEPRIME INTELLIGENTI ---
+    // Cerchiamo se nel testo originale c'è un URL per capire se creare un box extra di anteprima
+    const matchUrl = testo.match(urlRegex);
+    if (matchUrl) {
+        const urlPuro = matchUrl[0].toLowerCase();
+        let anteprimaHtml = '';
+
+        if (urlPuro.includes('youtube.com') || urlPuro.includes('youtu.be')) {
+            anteprimaHtml = `<div class="link-preview-box">📺 <strong>YouTube</strong><br>Video o Canale multimediale</div>`;
+        } else if (urlPuro.includes('instagram.com')) {
+            anteprimaHtml = `<div class="link-preview-box">📸 <strong>Instagram</strong><br>Post, Reel o Profilo social</div>`;
+        } else if (urlPuro.includes('spotify.com')) {
+            anteprimaHtml = `<div class="link-preview-box">🎵 <strong>Spotify</strong><br>Brano musicale, Playlist o Podcast</div>`;
+        } else if (urlPuro.includes('wikipedia.org')) {
+            anteprimaHtml = `<div class="link-preview-box">📚 <strong>Wikipedia</strong><br>Enciclopedia libera online</div>`;
+        } else if (urlPuro.includes('.it') || urlPuro.includes('.com') || urlPuro.includes('.org')) {
+            // Anteprima generica per siti web (come quello di eventimilano.it del tuo screenshot)
+            // Estrae il nome del dominio per renderlo pulito
+            const dominio = urlPuro.split('/')[2].replace('www.', '');
+            anteprimaHtml = `<div class="link-preview-box">🌐 <strong>Collegamento Esterno</strong><br>Visita il sito: ${dominio}</div>`;
+        }
+
+        testoModificato += anteprimaHtml;
+    }
+
+    return testoModificato;
+}
+
+// Funzione che rileva i link nel testo, li rende cliccabili e genera anteprime se sono mappe o video
+function convertiLinkEAnteprime(testo) {
+    if (!testo) return '';
+
+    // Regex per intercettare qualsiasi URL che inizia con http o https
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+    return testo.replace(urlRegex, function (url) {
+        let anteprimaHtml = '';
+
+        // 1. Anteprima speciale se si tratta di un link di GOOGLE MAPS
+        if (url.includes('maps.google') || url.includes('maps.app.goo.gl') || url.includes('/maps/')) {
+            anteprimaHtml = `
+                <div class="link-preview-box" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #ea4335; border-radius: 4px; font-size: 13px;">
+                    <div style="font-weight: bold; color: #ea4335; margin-bottom: 3px;">📍 Posizione Google Maps</div>
+                    <div style="color: #8696a0; font-size: 11px; word-break: break-all;">${url}</div>
+                </div>
+            `;
+        }
+        // 2. Anteprima speciale se si tratta di un video di YOUTUBE
+        else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            anteprimaHtml = `
+                <div class="link-preview-box" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #ff0000; border-radius: 4px; font-size: 13px;">
+                    <div style="font-weight: bold; color: #ff0000; margin-bottom: 3px;">📺 Video di YouTube</div>
+                    <div style="color: #8696a0; font-size: 11px; word-break: break-all;">${url}</div>
+                </div>
+            `;
+        }
+
+        // Ritorna il link cliccabile + l'eventuale box di anteprima sotto
+        return `<a href="${url}" target="_blank" style="color: #53bdeb; text-decoration: underline; word-break: break-all;">${url}</a>${anteprimaHtml}`;
+    });
+}
+
