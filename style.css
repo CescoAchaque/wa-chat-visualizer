@@ -110,6 +110,7 @@ body {
     height: calc(100vh - 70px);
 }
 
+/* --- CALENDARIO PC (STRUTTURA BASE) --- */
 #timeline-nav {
     width: 220px;
     background-color: var(--nav-bg);
@@ -118,8 +119,8 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease, padding 0.3s ease;
-    overflow-x: hidden;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
 }
 
 #timeline-nav h3 {
@@ -130,6 +131,22 @@ body {
     letter-spacing: 1px;
 }
 
+/* Minimizzazione PC fluida ad accelerazione hardware */
+#timeline-nav.minimized {
+    width: 75px !important;
+    padding: 15px 5px !important;
+}
+
+#timeline-nav.minimized h3 {
+    display: none;
+}
+
+#timeline-nav.minimized #timeline-header {
+    justify-content: center !important;
+    margin-bottom: 15px;
+}
+
+/* --- LOGICA DI INTERSCAMBIO TESTO TRAMITE CSS --- */
 .timeline-btn {
     display: block;
     width: 100%;
@@ -142,11 +159,29 @@ body {
     color: var(--text-color);
     cursor: pointer;
     font-size: 14px;
-    transition: background 0.2s;
+    transition: background 0.2s, text-align 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .timeline-btn:hover {
     background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Quando esteso, mostra la stringa estesa */
+#timeline-nav:not(.minimized) .timeline-btn::before {
+    content: attr(data-esteso);
+}
+
+/* Quando minimizzato, scambia con la stringa compatta */
+#timeline-nav.minimized .timeline-btn {
+    text-align: center;
+    font-size: 12px !important;
+    padding: 8px 2px;
+}
+
+#timeline-nav.minimized .timeline-btn::before {
+    content: attr(data-compatto);
 }
 
 #chat-body {
@@ -161,8 +196,15 @@ body {
     scroll-behavior: smooth;
 }
 
-body.dark-theme #chat-body { background-blend-mode: overlay; background-color: #0b141a; }
-body:not(.dark-theme) #chat-body { background-blend-mode: multiply; background-color: #efeae2; }
+body.dark-theme #chat-body {
+    background-blend-mode: overlay;
+    background-color: #0b141a;
+}
+
+body:not(.dark-theme) #chat-body {
+    background-blend-mode: multiply;
+    background-color: #efeae2;
+}
 
 #dark-mode-toggle {
     background: none;
@@ -358,57 +400,39 @@ body:not(.dark-theme) #chat-body { background-blend-mode: multiply; background-c
     font-size: 12px;
 }
 
-/* MINIMIZZAZIONE CALENDARIO PC */
-#timeline-nav.minimized {
-    width: 75px !important;
-    padding: 10px 5px !important;
-}
-
-#timeline-nav.minimized h3 {
-    display: none;
-}
-
-#timeline-nav.minimized #timeline-header {
-    justify-content: center !important;
-    margin-bottom: 15px;
-}
-
-#timeline-nav.minimized .timeline-btn {
-    font-size: 11px !important;
-    padding: 6px 2px !important;
-    text-align: center;
-    white-space: nowrap;
-}
-
-/* ADATTAMENTO RESPONSIVE PER SMARTPHONE */
+/* --- ADATTAMENTO RESPONSIVE PER SMARTPHONE (ISOLATO) --- */
 @media (max-width: 768px) {
-    body { padding: 0; }
-    #chat-screen { border-radius: 0; height: 100vh; }
-    #main-content { flex-direction: column; }
-    
+    body {
+        padding: 0;
+    }
+
+    #chat-screen {
+        border-radius: 0;
+        height: 100vh;
+    }
+
+    #main-content {
+        flex-direction: column; /* Calendario in alto, messaggi in basso */
+    }
+
     #timeline-nav {
         width: 100% !important;
         height: auto;
         max-height: 55px;
-        flex-direction: row !important;
+        flex-direction: row !important; /* Disposizione in orizzontale */
         padding: 8px !important;
         border-right: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        overflow-x: auto;
+        overflow-x: auto; /* Swipe con il dito attivo */
         overflow-y: hidden;
-        box-sizing: border-box;
     }
-    
-    #timeline-nav h3, #timeline-nav #toggle-timeline {
-        display: none !important;
+
+    #timeline-nav h3, 
+    #toggle-timeline {
+        display: none !important; /* Nasconde titoli e interruttori inutili su mobile */
     }
-    
-    #timeline-links {
-        display: flex;
-        flex-direction: row !important;
-        gap: 6px;
-    }
-    
+
+    /* Forza i bottoni a mostrare la stringa compatta */
     .timeline-btn {
         width: auto !important;
         margin: 0 !important;
@@ -416,8 +440,21 @@ body:not(.dark-theme) #chat-body { background-blend-mode: multiply; background-c
         white-space: nowrap;
         font-size: 12px !important;
     }
-    
-    #chat-body { padding: 10px; }
-    .message { max-width: 85%; }
-    .message img, .message video { max-width: 100%; }
+
+    .timeline-btn::before {
+        content: attr(data-compatto) !important;
+    }
+
+    #chat-body {
+        padding: 10px;
+    }
+
+    .message {
+        max-width: 85%; /* Sfrutta meglio la larghezza dello schermo del telefono */
+    }
+
+    .message img,
+    .message video {
+        max-width: 100%;
+    }
 }

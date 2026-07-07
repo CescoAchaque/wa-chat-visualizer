@@ -27,19 +27,15 @@ function aggiornaStatoRendering(percentuale) {
     if (barEl) barEl.style.width = `${percentuale}%`;
 }
 
-// !!! QUESTA PARTE RISOLVE L'ERRORE DELLA CONSOLE !!!
-// Aspetta che la pagina HTML sia completamente pronta e renderizzata dal browser
+// Aspetta che la pagina HTML sia completamente pronta
 document.addEventListener('DOMContentLoaded', function () {
-
     const inputElement = document.getElementById('file-input');
 
-    // Controllo di sicurezza se l'ID nell'HTML non dovesse coincidere
     if (!inputElement) {
         console.error("ERRORE: Non ho trovato nessun elemento con id='file-input' nel file HTML. Verifica i tag!");
         return;
     }
 
-    // Colleghiamo l'evento in totale sicurezza
     inputElement.onchange = async function (e) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -109,7 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 });
 
-
 function avviaParsingProgressivo(text, mediaMap) {
     const lines = text.split('\n');
     const totaleRighe = lines.length;
@@ -119,9 +114,9 @@ function avviaParsingProgressivo(text, mediaMap) {
     chatBody.innerHTML = '';
     timelineLinks.innerHTML = '';
 
+    // CORRETTO: Ripristinata la regex nativa stabile per la scansione delle ore
     const regex = /^\[?(\d{1,2})\/(\d{1,2})\/(\d{2,4})[,\s]*(\d{1,2}:\d{2})(?::\d{2})?\]?\s*(?:-\s*)?([^:]+):\s(.*)$/;
     const mediaRegex = /([\w\.\-]+?\.(?:jpg|jpeg|png|gif|opus|aac|mp4|mov|3gp|webp|pdf|docx|doc|xlsx|xls|pptx|ppt|zip)(?:\.pdf|\.jpg|\.png)?)/i;
-
 
     let primoAutore = null;
     let ultimoMsgContenitore = null;
@@ -143,7 +138,6 @@ function avviaParsingProgressivo(text, mediaMap) {
                 let [_, giorno, mese, anno, ora, autore, messaggio] = match;
                 if (!primoAutore) primoAutore = autore;
 
-                // Pulisce il messaggio dai tag di sistema di WhatsApp che bloccano il recupero dei media
                 messaggio = messaggio.replace('<Questo messaggio è stato modificato>', '')
                     .replace('<Media omessi>', '')
                     .trim();
@@ -199,6 +193,7 @@ function avviaParsingProgressivo(text, mediaMap) {
 
                             if (['opus', 'aac'].includes(ext)) {
                                 textContentDiv.innerHTML = `<span style="font-style:italic; display:block; margin-bottom:5px;">Nota vocale</span><audio controls src="${localMediaUrl}" style="max-width: 100%;" preload="none"></audio>`;
+                                mediaTrovato = true;
                             } else if (['mp4', 'mov', '3gp'].includes(ext)) {
                                 textContentDiv.innerHTML = `
                                     <div class="video-container" style="position:relative; min-height:200px; background:#111b21;">
@@ -213,11 +208,12 @@ function avviaParsingProgressivo(text, mediaMap) {
                                     e.stopPropagation();
                                     apriPienoSchermo(idMedia);
                                 });
+                                mediaTrovato = true;
                             } else if (ext === 'webp') {
                                 msgDiv.classList.add('is-sticker');
                                 textContentDiv.innerHTML = `<img src="${localMediaUrl}" alt="Sticker">`;
+                                mediaTrovato = true;
                             }
-                            // GESTIONE NUOVO SISTEMA ALLEGATI E DOCUMENTI GENERICI
                             else if (['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'zip'].includes(ext)) {
                                 let iconaDoc = "📄";
                                 if (ext === "pdf") iconaDoc = "📕";
@@ -233,6 +229,7 @@ function avviaParsingProgressivo(text, mediaMap) {
                                             <span style="font-size: 11px; color: #8696a0; margin-top: 2px;">Apri o scarica il file</span>
                                         </div>
                                     </a>`;
+                                mediaTrovato = true;
                             }
                             else {
                                 textContentDiv.innerHTML = `<img src="${localMediaUrl}" alt="Media" style="min-height:200px; background:#111b21; cursor:pointer; display:block; max-width:100%;">`;
@@ -243,8 +240,8 @@ function avviaParsingProgressivo(text, mediaMap) {
                                 textContentDiv.querySelector('img').addEventListener('click', function () {
                                     apriPienoSchermo(idMedia);
                                 });
+                                mediaTrovato = true;
                             }
-                            mediaTrovato = true;
                         }
                     }
 
@@ -257,7 +254,7 @@ function avviaParsingProgressivo(text, mediaMap) {
                 }
 
             } else if (ultimoMsgContenitore && line.trim() !== '') {
-                let rigaPulita = line.replace('<Questo messaggio è stato modificato>', '');
+                let rigaPulita = line.replace('<Questo messaggio è stato modificato>', '').replace('<Media omessi>', '');
                 if (rigaPulita.trim() !== '') {
                     ultimoMsgContenitore.innerHTML += '<br>' + convertiLinkEAnteprime(escapeHtml(rigaPulita));
                 }
@@ -281,8 +278,17 @@ function avviaParsingProgressivo(text, mediaMap) {
             for (const periodo in mappaMesiAnni) {
                 const btn = document.createElement('button');
                 btn.className = 'timeline-btn';
-                btn.title = periodo;
-                btn.innerText = periodo;
+
+                const parti = periodo.split(' ');
+                const meseStringa = parti[0] ? parti[0].toString() : '';
+                const annoStringa = parti[1] ? parti[1].toString() : '';
+
+                const meseCorto = meseStringa.substring(0, 3);
+                const annoCorto = annoStringa.substring(annoStringa.length - 2);
+                const testoCompatto = `${meseCorto} ${annoCorto}`;
+
+                btn.setAttribute('data-esteso', periodo);
+                btn.setAttribute('data-compatto', testoCompatto);
 
                 btn.onclick = function () {
                     const elementoTarget = document.getElementById(mappaMesiAnni[periodo]);
@@ -294,13 +300,13 @@ function avviaParsingProgressivo(text, mediaMap) {
 
             setTimeout(() => {
                 document.getElementById('upload-section').classList.add('hidden');
-                document.getElementById('chat-screen').classList.remove('hidden'); initControls();
+                document.getElementById('chat-screen').classList.remove('hidden');
+                initControls();
             }, 600);
         }
     }
     elaboraProssimoBlocco();
 }
-
 
 function apriPienoSchermo(indice) {
     if (indice < 0 || indice >= elencoMediaInChat.length) return;
@@ -344,14 +350,12 @@ function initControls() {
         });
     }
 
-    // --- STRUTTURA OTTIMIZZATA: RICERCA TESTUALE IN TEMPO REALE ---
     const searchInput = document.getElementById('chat-search');
     if (searchInput) {
         searchInput.addEventListener('input', function () {
             const termine = this.value.toLowerCase().trim();
             const tuttiIMessaggi = document.querySelectorAll('.message');
 
-            // Passo 1: Nascondi o mostra i messaggi in un unico ciclo veloce
             tuttiIMessaggi.forEach(msg => {
                 const txt = msg.querySelector('.text-content').innerText.toLowerCase();
                 const auth = msg.querySelector('.author').innerText.toLowerCase();
@@ -363,8 +367,6 @@ function initControls() {
                 }
             });
 
-            // Passo 2: Ottimizzazione divisori date senza loop infiniti di lettura
-            // Invece di fare i cicli While su ogni data, cerchiamo direttamente i divisori
             const divisori = document.querySelectorAll('.date-divider');
             divisori.forEach(div => {
                 if (termine === "") {
@@ -372,13 +374,12 @@ function initControls() {
                     return;
                 }
 
-                // Controlliamo i messaggi successivi fino al prossimo divisore
                 let prox = div.nextElementSibling;
                 let visibile = false;
                 while (prox && !prox.classList.contains('date-divider')) {
                     if (prox.classList.contains('message') && !prox.classList.contains('hidden')) {
                         visibile = true;
-                        break; // Trovato un messaggio visibile, possiamo fermarci subito!
+                        break;
                     }
                     prox = prox.nextElementSibling;
                 }
@@ -389,31 +390,12 @@ function initControls() {
         });
     }
 
-    // --- STRUTTURA OTTIMIZZATA: MINIMIZZAZIONE CALENDARIO PC ---
     const toggleTimelineBtn = document.getElementById('toggle-timeline');
     const timelineNav = document.getElementById('timeline-nav');
     if (toggleTimelineBtn && timelineNav) {
         toggleTimelineBtn.addEventListener('click', function () {
             timelineNav.classList.toggle('minimized');
-            const isMin = timelineNav.classList.contains('minimized');
-            this.textContent = isMin ? '➡️' : '📅';
-
-            // Ottimizzazione: pre-calcoliamo le modifiche prima di applicarle ai bottoni
-            const bottoni = document.querySelectorAll('.timeline-btn');
-
-            // Usiamo DocumentFragment per non stressare il browser se ci sono molti mesi
-            bottoni.forEach(btn => {
-                if (!btn.title) btn.title = btn.innerText;
-
-                if (isMin) {
-                    const parti = btn.title.split(' ');
-                    const meseCorto = parti[0] ? parti[0].substring(0, 3) : '';
-                    const annoCorto = parti[1] ? parti[1].substring(parti[1].length - 2) : '';
-                    btn.innerText = `${meseCorto} ${annoCorto}`;
-                } else {
-                    btn.innerText = btn.title;
-                }
-            });
+            this.textContent = timelineNav.classList.contains('minimized') ? '➡️' : '📅';
         });
     }
 
@@ -447,51 +429,42 @@ function initControls() {
     };
 }
 
-
 function convertiTestoInLink(testo) {
     if (!testo) return '';
-
-    // Regex per trovare tutti gli URL che iniziano con http o https
     const urlRegex = /(https?:\/\/[^\s]+)/g;
 
-    // Convertiamo i link di testo in tag <a> cliccabili
     let testoModificato = testo.replace(urlRegex, function (url) {
         return `<a href="${url}" target="_blank" class="chat-link">${url}</a>`;
     });
 
-    // --- GENERATORE DI ANTEPRIME INTELLIGENTI ---
     const matchUrl = testo.match(urlRegex);
     if (matchUrl) {
         const urlPuro = matchUrl[0].toLowerCase();
         let anteprimaHtml = '';
 
         if (urlPuro.includes('youtube.com') || urlPuro.includes('youtu.be')) {
-            anteprimaHtml = `<div class="link-preview-box"> 📺 <strong>YouTube</strong><br>Video o Canale multimediale</div>`;
+            anteprimaHtml = `<div class="link-preview-box" style="margin-top: 5px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #ff0000; font-size: 13px; text-align: left;"> 📺 <strong>YouTube</strong><br>Video o Canale multimediale</div>`;
         } else if (urlPuro.includes('instagram.com')) {
-            anteprimaHtml = `<div class="link-preview-box"> 📸 <strong>Instagram</strong><br>Post, Reel o Profilo social</div>`;
+            anteprimaHtml = `<div class="link-preview-box" style="margin-top: 5px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #e1306c; font-size: 13px; text-align: left;"> 📸 <strong>Instagram</strong><br>Post, Reel o Profilo social</div>`;
         } else if (urlPuro.includes('spotify.com')) {
-            anteprimaHtml = `<div class="link-preview-box"> 🎵 <strong>Spotify</strong><br>Brano musicale, Playlist o Podcast</div>`;
+            anteprimaHtml = `<div class="link-preview-box" style="margin-top: 5px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #1ed760; font-size: 13px; text-align: left;"> 🎵 <strong>Spotify</strong><br>Brano musicale, Playlist o Podcast</div>`;
         } else if (urlPuro.includes('wikipedia.org')) {
-            anteprimaHtml = `<div class="link-preview-box"> 📚 <strong>Wikipedia</strong><br>Enciclopedia libera online</div>`;
+            anteprimaHtml = `<div class="link-preview-box" style="margin-top: 5px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #8696a0; font-size: 13px; text-align: left;"> 📚 <strong>Wikipedia</strong><br>Enciclopedia libera online</div>`;
         } else if (urlPuro.includes('.it') || urlPuro.includes('.com') || urlPuro.includes('.org')) {
-            // Estrae il nome del dominio per renderlo pulito
             try {
                 const dominio = urlPuro.split('/')[2].replace('www.', '');
-                anteprimaHtml = `<div class="link-preview-box"> <strong>Collegamento 🌐 Esterno</strong><br>Visita il sito: ${dominio}</div>`;
+                anteprimaHtml = `<div class="link-preview-box" style="margin-top: 5px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #53bdeb; font-size: 13px; text-align: left;"> <strong>Collegamento 🌐 Esterno</strong><br>Visita il sito: ${dominio}</div>`;
             } catch (e) {
-                anteprimaHtml = `<div class="link-preview-box"> <strong>Collegamento 🌐 Esterno</strong><br>Visita il link allegato</div>`;
+                anteprimaHtml = `<div class="link-preview-box" style="margin-top: 5px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #53bdeb; font-size: 13px; text-align: left;"> <strong>Collegamento 🌐 Esterno</strong><br>Visita il link allegato</div>`;
             }
         }
-
         testoModificato += anteprimaHtml;
     }
-
     return testoModificato;
 }
 
 function convertiLinkEAnteprime(testo) {
     if (!testo) return '';
-
     const urlRegex = /(https?:\/\/[^\s]+)/g;
 
     return testo.replace(urlRegex, function (url) {
@@ -499,18 +472,17 @@ function convertiLinkEAnteprime(testo) {
 
         if (url.includes('maps.google') || url.includes('maps.app.goo.gl') || url.includes('/maps/')) {
             anteprimaHtml = `
-            <div class="link-preview-box" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #ea4335; border-radius: 4px; font-size: 13px;">
+            <div class="link-preview-box" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #ea4335; border-radius: 4px; font-size: 13px; text-align: left;">
                 <div style="font-weight: bold; color: #ea4335; margin-bottom: 3px;">📍 Posizione Google Maps</div>
                 <div style="color: #8696a0; font-size: 11px; word-break: break-all;">${url}</div>
             </div>`;
         } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
             anteprimaHtml = `
-            <div class="link-preview-box" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #ff0000; border-radius: 4px; font-size: 13px;">
+            <div class="link-preview-box" style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid #ff0000; border-radius: 4px; font-size: 13px; text-align: left;">
                 <div style="font-weight: bold; color: #ff0000; margin-bottom: 3px;">📺 Video di YouTube</div>
                 <div style="color: #8696a0; font-size: 11px; word-break: break-all;">${url}</div>
             </div>`;
         }
-
         return `<a href="${url}" target="_blank" style="color: #53bdeb; text-decoration: underline; word-break: break-all;">${url}</a>${anteprimaHtml}`;
     });
 }
