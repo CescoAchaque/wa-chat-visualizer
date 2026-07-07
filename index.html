@@ -6,50 +6,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp Chat Viewer Ultimate</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="/icon/whatsapp.png">
 </head>
 
 <body class="dark-theme">
     <div id="app-container">
         <div id="upload-section">
-            <h2>Seleziona il file .txt E tutti i media insieme</h2>
-            <p style="color: #8696a0; font-size: 14px;">Entra nella cartella, premi CTRL+A (o CMD+A) per selezionare
-                tutto e clicca Apri.</p>
-            <input type="file" id="file-input" accept=".txt,.jpg,.jpeg,.png,.gif,.opus,.aac,.mp4,.mov,.3gp,.webm,.webp"
-                multiple>
+            <img src="/icon/whatsapp.png" alt="WhatsApp Icon" style="width: 80px; height: 80px; margin-bottom: 15px;">
+            <h2>Seleziona il file .zip</h2>
+            <p style="color: #8696a0; font-size: 14px;">Seleziona direttamente il file archivio .zip esportato da WhatsApp.</p>
+            
+            <input type="file" id="file-input" accept=".zip" />
+            <div id="chat-output"></div>
 
             <div id="progress-container" class="hidden"
                 style="margin-top: 20px; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto;">
-                <!-- Testo dinamico che cambierà da "Lettura messaggi" a "Rendering grafico" -->
-                <div id="progress-text" style="font-weight: bold; margin-bottom: 8px; color: #53bdeb;">Lettura file in
-                    corso...</div>
-                <div
-                    style="width: 100%; background-color: #202c33; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 10px;">
-                    <div id="progress-bar"
-                        style="width: 0%; height: 100%; background-color: #00a884; transition: width 0.1s;"></div>
+                <div id="progress-text" style="font-weight: bold; margin-bottom: 8px; color: #53bdeb;">Lettura file in corso...</div>
+                <div style="width: 100%; background-color: #202c33; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 10px;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background-color: #00a884; transition: width 0.1s;"></div>
                 </div>
 
-                <!-- Nuova Seconda Barra dedicata al Rendering Grafico -->
                 <div id="render-progress-box" class="hidden">
-                    <div id="render-text" style="font-size: 13px; margin-bottom: 4px; color: #8696a0;">Elaborazione
-                        grafica... (0%)</div>
-                    <div
-                        style="width: 100%; background-color: #202c33; height: 6px; border-radius: 3px; overflow: hidden;">
-                        <div id="render-bar"
-                            style="width: 0%; height: 100%; background-color: #34b7f1; transition: width 0.1s;"></div>
+                    <div id="render-text" style="font-size: 13px; margin-bottom: 4px; color: #8696a0;">Elaborazione grafica... (0%)</div>
+                    <div style="width: 100%; background-color: #202c33; height: 6px; border-radius: 3px; overflow: hidden;">
+                        <div id="render-bar" style="width: 0%; height: 100%; background-color: #34b7f1; transition: width 0.1s;"></div>
                     </div>
                 </div>
             </div>
-
         </div>
 
         <div id="chat-screen" class="hidden">
             <div id="chat-header">
                 <div id="header-left">
                     <button id="back-to-upload" title="Importa un'altra chat">↩ Nuova Chat</button>
-                    <!-- ID modificato per inserire il nome del file dinamico -->
                     <span id="chat-title-text" style="margin-left: 15px;">Visualizzatore Chat</span>
                 </div>
                 <div id="header-controls">
+                    <!-- Barra di ricerca integrata nell'header -->
+                    <div id="search-container" style="display: flex; align-items: center; background: #202c33; padding: 4px 10px; border-radius: 8px; margin-right: 15px;">
+                        <span style="color: #8696a0; margin-right: 5px;">🔍</span>
+                        <input type="text" id="chat-search" placeholder="Cerca nella chat..." style="background: transparent; border: none; color: #fff; outline: none; font-size: 14px; width: 180px;">
+                    </div>
                     <button id="dark-mode-toggle" title="Cambia tema">☀️</button>
                     <div id="zoom-control">
                         <span>A-</span>
@@ -60,7 +57,10 @@
             </div>
             <div id="main-content">
                 <div id="timeline-nav">
-                    <h3>Calendario</h3>
+                    <div id="timeline-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3>Calendario</h3>
+                        <button id="toggle-timeline" title="Minimizza Calendario" style="background: transparent; border: none; color: #8696a0; cursor: pointer; font-size: 16px; padding: 4px;">📅</button>
+                    </div>
                     <div id="timeline-links"></div>
                 </div>
                 <div id="chat-body"></div>
@@ -68,18 +68,18 @@
         </div>
     </div>
 
-    <!-- Lightbox con didascalia per le info dei media -->
     <div id="lightbox" class="hidden" onclick="chiudiLightbox()">
         <span class="lightbox-close" onclick="chiudiLightbox()">&times;</span>
-        <button class="lightbox-nav prev" onclick="navigaMedia(-1, event)">&#10094;</button>
+        <button class="lightbox-nav prev" onclick="navigaMedia(-1, event)">❮</button>
         <div id="lightbox-container" style="display: flex; flex-direction: column; align-items: center;">
             <div id="lightbox-content" onclick="event.stopPropagation()"></div>
-            <!-- Barra delle info del media -->
             <div id="lightbox-caption" onclick="event.stopPropagation()"></div>
         </div>
-        <button class="lightbox-nav next" onclick="navigaMedia(1, event)">&#10095;</button>
+        <button class="lightbox-nav next" onclick="navigaMedia(1, event)">❯</button>
     </div>
 
+    <!-- Ordine corretto dei file JS -->
+    <script src="jszip.min.js"></script>
     <script src="script.js"></script>
 </body>
 

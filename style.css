@@ -59,7 +59,7 @@ body {
 #chat-screen {
     max-width: 1100px;
     margin: 0 auto;
-    background: var(--wallpaper);
+    background-color: var(--bg-color);
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     overflow: hidden;
@@ -89,7 +89,6 @@ body {
     gap: 20px;
 }
 
-/* Stile speciale per il tasto "Nuova Chat" */
 #back-to-upload {
     background-color: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -108,7 +107,7 @@ body {
 
 #main-content {
     display: flex;
-    height: 78vh;
+    height: calc(100vh - 70px);
 }
 
 #timeline-nav {
@@ -119,6 +118,8 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    transition: width 0.3s ease, padding 0.3s ease;
+    overflow-x: hidden;
 }
 
 #timeline-nav h3 {
@@ -151,11 +152,17 @@ body {
 #chat-body {
     flex: 1;
     padding: 20px;
-    overflow-y: scroll;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    gap: 8px;
+    background-image: var(--wallpaper);
+    background-repeat: repeat;
     scroll-behavior: smooth;
 }
+
+body.dark-theme #chat-body { background-blend-mode: overlay; background-color: #0b141a; }
+body:not(.dark-theme) #chat-body { background-blend-mode: multiply; background-color: #efeae2; }
 
 #dark-mode-toggle {
     background: none;
@@ -191,27 +198,32 @@ body {
     text-transform: capitalize;
 }
 
+/* FUMETTI STILE WHATSAPP WEB */
 .message {
-    max-width: 75%;
-    padding: 10px 14px;
-    margin: 4px 0;
+    max-width: 65%;
+    padding: 8px 12px;
+    margin: 2px 0;
     border-radius: 8px;
     font-size: 16px;
     position: relative;
-    line-height: 1.5;
+    line-height: 1.4;
     word-wrap: break-word;
     color: var(--text-color);
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
 }
 
 .sent {
     background-color: var(--msg-sent);
     align-self: flex-end;
+    border-top-right-radius: 0;
 }
 
 .received {
     background-color: var(--msg-received);
     align-self: flex-start;
+    border-top-left-radius: 0;
 }
 
 .meta {
@@ -312,13 +324,8 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
-.prev {
-    left: 20px;
-}
-
-.next {
-    right: 20px;
-}
+.prev { left: 20px; }
+.next { right: 20px; }
 
 #lightbox-container {
     position: relative;
@@ -351,47 +358,66 @@ body {
     font-size: 12px;
 }
 
-/* Stile per i link cliccabili dentro la chat */
-.chat-link {
-    color: #53bdeb;
-    /* Colore azzurro per Dark Mode */
-    text-decoration: underline;
-    cursor: pointer;
-    word-break: break-all;
+/* MINIMIZZAZIONE CALENDARIO PC */
+#timeline-nav.minimized {
+    width: 75px !important;
+    padding: 10px 5px !important;
 }
 
-body:not(.dark-theme) .chat-link {
-    color: #027eb5;
-    /* Colore blu per Light Mode */
+#timeline-nav.minimized h3 {
+    display: none;
 }
 
-/* Box per l'anteprima dei link speciali */
-.link-preview-box {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-left: 3px solid #34b7f1;
-    padding: 8px 12px;
-    margin-top: 6px;
-    border-radius: 0 6px 6px 0;
-    font-size: 13px;
-    color: var(--meta-color);
+#timeline-nav.minimized #timeline-header {
+    justify-content: center !important;
+    margin-bottom: 15px;
 }
 
-/* Colore dei link all'interno dei messaggi */
-.text-content a {
-    color: #34b7f1 !important;
-    /* Colore azzurro WhatsApp */
-    text-decoration: underline;
+#timeline-nav.minimized .timeline-btn {
+    font-size: 11px !important;
+    padding: 6px 2px !important;
+    text-align: center;
+    white-space: nowrap;
 }
 
-body:not(.dark-theme) .text-content a {
-    color: #027eb5 !important;
-    /* Un azzurro leggermente più scuro per la modalità chiara per leggibilità */
-}
-
-.link-preview-box {
-    transition: background 0.2s;
-}
-
-.link-preview-box:hover {
-    background: rgba(0, 0, 0, 0.3) !important;
+/* ADATTAMENTO RESPONSIVE PER SMARTPHONE */
+@media (max-width: 768px) {
+    body { padding: 0; }
+    #chat-screen { border-radius: 0; height: 100vh; }
+    #main-content { flex-direction: column; }
+    
+    #timeline-nav {
+        width: 100% !important;
+        height: auto;
+        max-height: 55px;
+        flex-direction: row !important;
+        padding: 8px !important;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        overflow-x: auto;
+        overflow-y: hidden;
+        box-sizing: border-box;
+    }
+    
+    #timeline-nav h3, #timeline-nav #toggle-timeline {
+        display: none !important;
+    }
+    
+    #timeline-links {
+        display: flex;
+        flex-direction: row !important;
+        gap: 6px;
+    }
+    
+    .timeline-btn {
+        width: auto !important;
+        margin: 0 !important;
+        padding: 6px 12px !important;
+        white-space: nowrap;
+        font-size: 12px !important;
+    }
+    
+    #chat-body { padding: 10px; }
+    .message { max-width: 85%; }
+    .message img, .message video { max-width: 100%; }
 }
